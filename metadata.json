@@ -1,10 +1,11 @@
 {
   "name": "My Test Song NFT",
   "symbol": "TSONG",
-  "description": "This NFT contains my test song for free testing",
-  "animation_url": "https://username.github.io/mysong.mp3",
+  "description": "Test song NFT - Devnet",
+  "image": "https://username.github.io/repo/image.png",
+  "animation_url": "https://username.github.io/repo/mysong.mp3",
   "attributes": [
-    {"trait_type": "Genre", "value": "Chill"},
-    {"trait_type": "Length", "value": "2:30"}
+    {"trait_type":"Genre","value":"Chill"},
+    {"trait_type":"Length","value":"2:30"}
   ]
 }
