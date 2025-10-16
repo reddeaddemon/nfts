@@ -2,71 +2,62 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Devnet NFT Mint</title>
+  <title>Mint Devnet NFT</title>
 </head>
 <body>
-  <h1>Mint Your Devnet NFT</h1>
-  <button id="mintButton">Mint NFT</button>
+  <h1>Mint Your NFT on Solana Devnet</h1>
+  <button id="connectBtn">Connect Phantom</button>
+  <button id="mintBtn" disabled>Mint NFT</button>
   <p id="status"></p>
 
   <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.js"></script>
+  <script src="https://unpkg.com/@metaplex-foundation/js@1.5.0/dist/index.iife.js"></script>
+
   <script>
-    const mintButton = document.getElementById('mintButton');
+    const connectBtn = document.getElementById('connectBtn');
+    const mintBtn = document.getElementById('mintBtn');
     const status = document.getElementById('status');
 
-    // Replace with your GitHub-hosted metadata JSON
+    let provider;
+    let metaplex;
+
+    // Replace with your GitHub-hosted metadata.json
     const METADATA_URL = "https://reddeaddemon.github.io/nfts/metadata.json";
 
-    mintButton.onclick = async () => {
+    connectBtn.onclick = async () => {
       if (!window.solana || !window.solana.isPhantom) {
-        status.innerText = "Phantom wallet not found. Please install Phantom on your Android.";
+        status.innerText = "Phantom not found. Install Phantom extension.";
         return;
       }
 
       try {
-        // Connect to Phantom
-        const resp = await window.solana.connect({ onlyIfTrusted: false });
-        const publicKey = resp.publicKey.toString();
-        status.innerText = "Connected wallet: " + publicKey;
+        await window.solana.connect();
+        provider = window.solana;
+        metaplex = new metaplexJs.Metaplex(new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('devnet')))
+          .use(metaplexJs.walletAdapterIdentity({ publicKey: provider.publicKey, signTransaction: provider.signTransaction, signAllTransactions: provider.signAllTransactions }));
 
-        // Connect to Devnet
-        const connection = new solanaWeb3.Connection(
-          solanaWeb3.clusterApiUrl('devnet'),
-          'confirmed'
-        );
+        status.innerText = "Connected: " + provider.publicKey.toString();
+        mintBtn.disabled = false;
+      } catch (err) {
+        status.innerText = "Error connecting Phantom: " + err.message;
+      }
+    };
 
-        // Generate a new mint keypair
-        const mint = solanaWeb3.Keypair.generate();
-
-        // Transaction to create mint
-        let transaction = new solanaWeb3.Transaction();
-
-        // Add create account & mint instructions
-        transaction.add(
-          solanaWeb3.SystemProgram.createAccount({
-            fromPubkey: new solanaWeb3.PublicKey(publicKey),
-            newAccountPubkey: mint.publicKey,
-            space: 82, // minimal
-            lamports: await connection.getMinimumBalanceForRentExemption(82),
-            programId: solanaWeb3.TOKEN_PROGRAM_ID
-          })
-        );
-
-        // Send transaction
-        const { blockhash } = await connection.getLatestBlockhash();
-        transaction.recentBlockhash = blockhash;
-        transaction.feePayer = new solanaWeb3.PublicKey(publicKey);
-
-        const signed = await window.solana.signTransaction(transaction);
-        const txid = await connection.sendRawTransaction(signed.serialize());
-        await connection.confirmTransaction(txid, 'confirmed');
-
-        status.innerText = "NFT minted successfully! TXID: " + txid;
+    mintBtn.onclick = async () => {
+      try {
+        status.innerText = "Minting NFT...";
+        const { nft } = await metaplex.nfts().create({
+          uri: METADATA_URL,
+          name: "My Test Song NFT",
+          sellerFeeBasisPoints: 0, // No royalty
+        });
+        status.innerText = "NFT minted! Mint address: " + nft.address.toString();
       } catch (err) {
         console.error(err);
-        status.innerText = "Error: " + err.message;
+        status.innerText = "Error minting NFT: " + err.message;
       }
     };
   </script>
 </body>
 </html>
+
