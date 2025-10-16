@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Devnet NFT Mint</title>
+</head>
+<body>
+  <h1>Mint Your Devnet NFT</h1>
+  <button id="mintButton">Mint NFT</button>
+  <p id="status"></p>
+
+  <script src="https://unpkg.com/@solana/web3.js@1.73.0/lib/index.iife.js"></script>
+  <script>
+    const mintButton = document.getElementById('mintButton');
+    const status = document.getElementById('status');
+
+    // Replace with your GitHub-hosted metadata JSON
+    const METADATA_URL = "https://reddeaddemon.github.io/nfts/metadata.json";
+
+    mintButton.onclick = async () => {
+      if (!window.solana || !window.solana.isPhantom) {
+        status.innerText = "Phantom wallet not found. Please install Phantom on your Android.";
+        return;
+      }
+
+      try {
+        // Connect to Phantom
+        const resp = await window.solana.connect({ onlyIfTrusted: false });
+        const publicKey = resp.publicKey.toString();
+        status.innerText = "Connected wallet: " + publicKey;
+
+        // Connect to Devnet
+        const connection = new solanaWeb3.Connection(
+          solanaWeb3.clusterApiUrl('devnet'),
+          'confirmed'
+        );
+
+        // Generate a new mint keypair
+        const mint = solanaWeb3.Keypair.generate();
+
+        // Transaction to create mint
+        let transaction = new solanaWeb3.Transaction();
+
+        // Add create account & mint instructions
+        transaction.add(
+          solanaWeb3.SystemProgram.createAccount({
+            fromPubkey: new solanaWeb3.PublicKey(publicKey),
+            newAccountPubkey: mint.publicKey,
+            space: 82, // minimal
+            lamports: await connection.getMinimumBalanceForRentExemption(82),
+            programId: solanaWeb3.TOKEN_PROGRAM_ID
+          })
+        );
+
+        // Send transaction
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+        transaction.feePayer = new solanaWeb3.PublicKey(publicKey);
+
+        const signed = await window.solana.signTransaction(transaction);
+        const txid = await connection.sendRawTransaction(signed.serialize());
+        await connection.confirmTransaction(txid, 'confirmed');
+
+        status.innerText = "NFT minted successfully! TXID: " + txid;
+      } catch (err) {
+        console.error(err);
+        status.innerText = "Error: " + err.message;
+      }
+    };
+  </script>
+</body>
+</html>
