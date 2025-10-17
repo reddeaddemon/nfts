@@ -5,7 +5,8 @@
   "image": "https://username.github.io/repo/image.png",
   "animation_url": "https://username.github.io/repo/mysong.mp3",
   "attributes": [
-    {"trait_type":"Genre","value":"Chill"},
-    {"trait_type":"Length","value":"2:30"}
+    {"trait_type":"Edition","value":"1/1"},
+    {"trait_type":"Type","value":"Game key"}
   ]
 }
+
